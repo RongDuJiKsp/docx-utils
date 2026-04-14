@@ -1,8 +1,11 @@
 {
-  "name": "docs-space-finder",
+  "name": "docx-utils",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "bin": {
+    "docx-utils": "./index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -10,6 +13,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "commander": "^14.0.3",
     "mammoth": "^1.12.0"
   }
 }
