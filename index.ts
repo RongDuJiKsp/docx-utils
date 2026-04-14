@@ -15,6 +15,10 @@ async function echoRawText(filePath: string) {
   console.log(text.replace(/\r\n|\n|\r/g, "\\n"));
 }
 
+type FindSpaceOptions = {
+  context: number;
+};
+
 function parseNonNegativeInteger(rawValue: string, argName: string): number {
   const value = Number(rawValue);
 
@@ -43,20 +47,20 @@ function resolveSliceRange(total: number, arg1?: number, arg2?: number): [number
   return [start, Math.min(arg2, total)];
 }
 
-async function findSpace(filePath: string, arg1?: number, arg2?: number) {
+async function findSpace(filePath: string, arg1?: number, arg2?: number, context = 10) {
   const text = await extractRawText(filePath);
 
   let spaceCount = 0;
   const previews: Array<{ index: number; preview: string }> = [];
 
-  const CONTEXT = 15; // 前后预览长度
+  const previewContext = context;
 
   for (let i = 0; i < text.length; i++) {
     if (text[i] === " ") {
       spaceCount++;
 
-      const start = Math.max(0, i - CONTEXT);
-      const end = Math.min(text.length, i + CONTEXT);
+      const start = Math.max(0, i - previewContext);
+      const end = Math.min(text.length, i + previewContext);
 
       const snippet = `${text.slice(start, i)}[space]${text.slice(i + 1, end)}`;
 
@@ -105,11 +109,14 @@ program
   .argument("<fileName>", "docx 文件路径")
   .argument("[arg1]", "起始索引，非负整数")
   .argument("[arg2]", "结束索引，非负整数（左闭右开）")
-  .action(async (fileName: string, rawArg1?: string, rawArg2?: string) => {
+  .option("-c, --context <length>", "预览长度，非负整数，默认 10", (value: string) => {
+    return parseNonNegativeInteger(value, "context");
+  }, 10)
+  .action(async (fileName: string, rawArg1: string | undefined, rawArg2: string | undefined, options: FindSpaceOptions) => {
     const arg1 = rawArg1 !== undefined ? parseNonNegativeInteger(rawArg1, "arg1") : undefined;
     const arg2 = rawArg2 !== undefined ? parseNonNegativeInteger(rawArg2, "arg2") : undefined;
 
-    await findSpace(fileName, arg1, arg2);
+    await findSpace(fileName, arg1, arg2, options.context);
   });
 
 program.addHelpText(
@@ -119,6 +126,7 @@ program.addHelpText(
   未指定 arg1/arg2: 全部打印
   指定 arg1: 打印 [arg1, arg1+20)
   指定 arg1 和 arg2: 打印 [arg1, arg2)
+  可选 --context/-c: 设置前后预览长度，默认 10
 `
 );
 
