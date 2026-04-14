@@ -1,14 +1,7 @@
 #!/usr/bin/env bun
 
-import fs from "fs/promises";
 import { Command } from "commander";
-import mammoth from "mammoth";
-
-async function extractRawText(filePath: string): Promise<string> {
-  const buffer = await fs.readFile(filePath);
-  const result = await mammoth.extractRawText({ buffer });
-  return result.value;
-}
+import { extractRawText, parseNonNegativeInteger, resolveSliceRange } from "./utils";
 
 async function echoRawText(filePath: string) {
   const text = await extractRawText(filePath);
@@ -18,34 +11,6 @@ async function echoRawText(filePath: string) {
 type FindSpaceOptions = {
   context: number;
 };
-
-function parseNonNegativeInteger(rawValue: string, argName: string): number {
-  const value = Number(rawValue);
-
-  if (!Number.isInteger(value) || value < 0) {
-    throw new Error(`${argName} 必须是大于等于 0 的整数，当前值: ${rawValue}`);
-  }
-
-  return value;
-}
-
-function resolveSliceRange(total: number, arg1?: number, arg2?: number): [number, number] {
-  if (arg1 === undefined) {
-    return [0, total];
-  }
-
-  const start = Math.min(arg1, total);
-
-  if (arg2 === undefined) {
-    return [start, Math.min(total, start + 20)];
-  }
-
-  if (arg2 < arg1) {
-    throw new Error(`arg2 必须大于等于 arg1，当前 arg1=${arg1}, arg2=${arg2}`);
-  }
-
-  return [start, Math.min(arg2, total)];
-}
 
 async function findSpace(filePath: string, arg1?: number, arg2?: number, context = 10) {
   const text = await extractRawText(filePath);
@@ -113,8 +78,8 @@ program
     return parseNonNegativeInteger(value, "context");
   }, 10)
   .action(async (fileName: string, rawArg1: string | undefined, rawArg2: string | undefined, options: FindSpaceOptions) => {
-    const arg1 = rawArg1 !== undefined ? parseNonNegativeInteger(rawArg1, "arg1") : undefined;
-    const arg2 = rawArg2 !== undefined ? parseNonNegativeInteger(rawArg2, "arg2") : undefined;
+    const arg1 = parseNonNegativeInteger(rawArg1, "arg1");
+    const arg2 = parseNonNegativeInteger(rawArg2, "arg2");
 
     await findSpace(fileName, arg1, arg2, options.context);
   });
