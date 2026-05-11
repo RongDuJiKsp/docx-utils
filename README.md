@@ -40,7 +40,7 @@ docx-utils refs <fileName> <table|pic> <def|use>
 
 ```bash
 # 固定参数顺序
-docx-utils refs <path> <table|pic> <def|use>
+docx-utils refs <fileName> <table|pic> <def|use>
 
 # 常见示例
 docx-utils refs ./demo.docx pic def
