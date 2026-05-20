@@ -56,25 +56,6 @@ function formatIssues(issues: AiReviewIssue[]): string {
 	return lines.join('\n')
 }
 
-function toSingleLine(value: string): string {
-	return value.replace(/\s+/g, ' ').trim()
-}
-
-function formatStreamMessages(messages: BaseMessage[]): string {
-	if (messages.length === 0) {
-		return ''
-	}
-
-	const last = messages[messages.length - 1]
-	const type =
-		typeof (last as { getType?: () => string }).getType === 'function'
-			? (last as { getType: () => string }).getType()
-			: 'message'
-	const content = (last as { content?: unknown }).content
-	const text = typeof content === 'string' ? content : JSON.stringify(content ?? '')
-	return toSingleLine(`[${type}] ${text}`)
-}
-
 function createRulesTool(rulesPath: string) {
 	return new DynamicTool({
 		name: 'read_rules',
@@ -222,10 +203,8 @@ export async function aiReview(fileName: string, options: AiReviewOptions) {
 	const iterator = iteratorFactory()
 
 	for await (const messages of iterator) {
-		const line = formatStreamMessages(messages)
-		if (line) {
-			console.log(line)
-		}
+		console.log("Recv Messages:");
+		console.log(messages);
 	}
 
 	console.log(formatIssues(issues))
