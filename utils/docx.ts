@@ -13,7 +13,10 @@ export async function extractRawText(filePath: string): Promise<string> {
 const ANCHOR_NUMBER_RE = /^\d+(?:\.\d+)+$/
 const CHAPTER_NUMBER_RE = /^第(\d+)章$/
 const APPEND_NUMBER_RE = /^附录(.+)$/
-const TOC_NODE_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, li'
+// 章节标题的选择器，包含常见的标题元素和列表元素
+const TOC_NODE_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, li, ui, ol'
+// 粗体、斜体、下划线、删除线、上标和下标
+const STYLE_NODE_SELECTOR = 'strong, b, em, i, u, sub, sup'
 
 export class DocxSession {
 	constructor(
@@ -54,20 +57,23 @@ export class DocxSession {
 			return null
 		}
 		const anchorEl = anchors.first()
-		if (anchorEl.children().length !== 0) {
+		if (anchorEl.children(`:not(${STYLE_NODE_SELECTOR})`).length !== 0) {
+			return null
+		}
+		if(anchorEl.text().trim() === '') {
 			return null
 		}
 		return anchorEl
 	}
 
 	private static titleParagraphElement(nodeEl: Cheerio<Element>): Cheerio<Element> | null {
-		if (nodeEl.children().length !== 0) {
+		if (nodeEl.children(`:not(${STYLE_NODE_SELECTOR})`).length !== 0) {
 			return null
 		}
 		return nodeEl
 	}
 
-	// 从段落元素中提取标题文本，要求该段落下有且仅有一个子元素为 a 标签，且 a 标签下没有子元素
+	// 从段落元素中提取标题文本，要求该段落下有且仅有一个子元素为 a 标签，且 a 标签下没有子元素，即为纯文本
 	static getTitleFromParagraphElement(nodeEl: Cheerio<Element>): string | null {
 		const anchorEl = this.titleElement(nodeEl)
 		if (!anchorEl) {
@@ -83,10 +89,7 @@ export class DocxSession {
 			return false
 		}
 		const text = graphEl.text().trim()
-		return text
-			.slice(0, 100)
-			.replaceAll(' ', '')
-			.startsWith([this.deepLevel.join('.'), this.title].join('').replaceAll(' ', ''))
+		return text.slice(0, 100).replaceAll(' ', '').startsWith(this.toTitle().replaceAll(' ', ''))
 	}
 
 	toTitle(): string {
@@ -132,6 +135,17 @@ function splitParagraphsFromSession(sessions: DocxSession[], html: string): Docx
 		return []
 	}
 	const $ = load(html)
+	// 移除没有文本且没有子元素的 a 标签，避免干扰章节内容提取
+	$('a').each((_index, el) => {
+		const $el = $(el)
+
+		const text = $el.text().trim()
+		const hasChildren = $el.children().length > 0
+
+		if (!text && !hasChildren) {
+			$el.remove()
+		}
+	})
 	const root = $.root()
 
 	const sessionIter = sessions[Symbol.iterator]()
