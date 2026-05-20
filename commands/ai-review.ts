@@ -1,11 +1,11 @@
 import fs from 'fs/promises'
 import { z } from 'zod'
-import { ChatPromptTemplate } from '@langchain/core/prompts'
 import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools'
-import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents'
+import { BaseMessage, HumanMessage } from '@langchain/core/messages'
+import { createAgent } from 'langchain'
 import { extractDocxOutline, type DocxOutline } from '../utils/docx'
 import { loadAiReviewConfig } from '../utils/env'
-import { createChatModel } from '../utils/ai/provider'
+import { getAiProvider } from '../utils/ai/provider'
 
 export type AiReviewOptions = {
 	rules: string
@@ -60,49 +60,19 @@ function toSingleLine(value: string): string {
 	return value.replace(/\s+/g, ' ').trim()
 }
 
-function formatStreamEvent(event: unknown): string {
-	if (event === null || event === undefined) {
+function formatStreamMessages(messages: BaseMessage[]): string {
+	if (messages.length === 0) {
 		return ''
 	}
 
-	if (typeof event === 'string') {
-		return toSingleLine(event)
-	}
-
-	if (typeof event !== 'object') {
-		return String(event)
-	}
-
-	const record = event as Record<string, unknown>
-	const parts: string[] = []
-
-	if ('action' in record && record.action && typeof record.action === 'object') {
-		const action = record.action as Record<string, unknown>
-		const tool = typeof action.tool === 'string' ? action.tool : 'action'
-		const input = action.toolInput !== undefined ? toSingleLine(JSON.stringify(action.toolInput)) : ''
-		const line = input ? `调用 ${tool}: ${input}` : `调用 ${tool}`
-		parts.push(line)
-	}
-
-	if ('observation' in record) {
-		const observation = toSingleLine(JSON.stringify(record.observation ?? ''))
-		if (observation) {
-			parts.push(`观察: ${observation}`)
-		}
-	}
-
-	if ('returnValues' in record) {
-		const output = toSingleLine(JSON.stringify(record.returnValues ?? ''))
-		if (output) {
-			parts.push(`完成: ${output}`)
-		}
-	}
-
-	if (parts.length > 0) {
-		return parts.join(' | ')
-	}
-
-	return toSingleLine(JSON.stringify(record))
+	const last = messages[messages.length - 1]
+	const type =
+		typeof (last as { getType?: () => string }).getType === 'function'
+			? (last as { getType: () => string }).getType()
+			: 'message'
+	const content = (last as { content?: unknown }).content
+	const text = typeof content === 'string' ? content : JSON.stringify(content ?? '')
+	return toSingleLine(`[${type}] ${text}`)
 }
 
 function createRulesTool(rulesPath: string) {
@@ -216,35 +186,42 @@ export async function aiReview(fileName: string, options: AiReviewOptions) {
 	const rulesTool = createRulesTool(options.rules)
 	const issueTool = createIssueTool(issues)
 
-	const model = createChatModel(config)
+	const provider = getAiProvider(config.provider)
+	const model = provider.createModel({
+		apiKey: config.apiKey,
+		baseUrl: config.baseUrl,
+		model: config.model,
+		temperature: config.temperature,
+	})
 
-	const prompt = ChatPromptTemplate.fromMessages([
-		['system', buildSystemPrompt()],
-		['human', '{input}'],
-	])
+	if (!model) {
+		throw new Error(`模型创建失败: ${config.provider}`)
+	}
 
 	const tools = [rulesTool, outlineTool, sectionTool, issueTool]
 
-	const agent = await createOpenAIToolsAgent({
-		llm: model,
+	const agent = createAgent({
+		model,
+		systemPrompt: buildSystemPrompt(),
 		tools,
-		prompt,
-	})
-
-	const executor = new AgentExecutor({
-		agent,
-		tools,
-		maxIterations: config.maxIterations,
-	})
+	}).withConfig({ recursionLimit: config.maxIterations })
 
 	console.log('开始 AI 章节审查...')
 
-	const stream = await executor.stream({
-		input: [`目标文件: ${fileName}`, `规则文件: ${options.rules}`, `章节数: ${outline.sections.length}`, '请按工具流程执行审查。'].join('\n'),
-	})
+	const beforeMessages = [
+		new HumanMessage([
+			`目标文件: ${fileName}`,
+			`规则文件: ${options.rules}`,
+			`章节数: ${outline.sections.length}`,
+			'请按工具流程执行审查。',
+		].join('\n')),
+	]
 
-	for await (const chunk of stream) {
-		const line = formatStreamEvent(chunk)
+	const iteratorFactory = await provider.streamingInvokeIterator(agent, beforeMessages)
+	const iterator = iteratorFactory()
+
+	for await (const messages of iterator) {
+		const line = formatStreamMessages(messages)
 		if (line) {
 			console.log(line)
 		}
