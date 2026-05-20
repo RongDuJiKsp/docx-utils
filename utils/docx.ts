@@ -104,7 +104,7 @@ export class DocxParagraph {
 	) {}
 
 	static paragraphText(nodeEl: Cheerio<Element>): string | null {
-		if (nodeEl.children().length !== 0) {
+		if (nodeEl.children(`:not(${STYLE_NODE_SELECTOR})`).length !== 0) {
 			return null
 		}
 		return nodeEl.text().trim() || null
