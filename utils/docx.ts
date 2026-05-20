@@ -25,8 +25,6 @@ type OutlineBuildResult = {
 	anchorCount: number
 }
 
-const BLOCK_TAGS = new Set(['p', 'div', 'blockquote', 'pre', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th'])
-
 const ANCHOR_NUMBER_RE = /^\d+(?:\.\d+)+$/
 
 function normalizeTitle(text: string): string {
@@ -45,8 +43,8 @@ function normalizeSectionText(text: string): string {
 
 function parseAnchorHeading(text: string): { level: number; title: string } | null {
 	const normalized = normalizeTitle(text)
-	const [numbering,title] = normalized.split(/\s+/)
-	if (!numbering || !title||!ANCHOR_NUMBER_RE.test(numbering)) {
+	const [numbering, title] = normalized.split(/\s+/)
+	if (!numbering || !title || !ANCHOR_NUMBER_RE.test(numbering)) {
 		return null
 	}
 	const level = numbering.split('.').length
@@ -77,73 +75,37 @@ function buildOutlineFromHtml(html: string): OutlineBuildResult {
 		current = null
 	}
 
-	const ensureSection = () => {
-		if (current) {
-			return
-		}
-		current = {
-			id: `section-${sections.length + 1}`,
-			title: '无标题',
-			level: 1,
-			parts: [],
-		}
-	}
-
-	const appendText = (value: string) => {
-		const text = value.replace(/\s+/g, ' ')
-		if (text.trim() === '') {
-			return
-		}
-		ensureSection()
-		current?.parts.push(text)
-	}
-
-	const appendBreak = () => {
+	const appendParagraph = (value: string) => {
 		if (!current) {
 			return
 		}
+		const text = value.replace(/\s+/g, ' ').trim()
+		if (text === '') {
+			return
+		}
+		current.parts.push(text)
 		current.parts.push('\n')
 	}
 
-	const walk = (node: cheerio.AnyNode) => {
-		if (node.type === 'tag') {
-			const tagName = node.tagName?.toLowerCase()
-
-			if (tagName === 'a') {
-				const heading = parseAnchorHeading($(node).text())
-				if (heading) {
-					anchorCount += 1
-					flushSection()
-					current = {
-						id: `section-${sections.length + 1}`,
-						title: heading.title,
-						level: heading.level,
-						parts: [],
-					}
-					return
-				}
-			}
-
-			if (node.children) {
-				for (const child of node.children) {
-					walk(child)
-				}
-			}
-
-			if (tagName && BLOCK_TAGS.has(tagName)) {
-				appendBreak()
+	root.find('p').each((index: number, node: cheerio.AnyNode) => {
+		void index
+		const paragraphText = normalizeTitle($(node).text())
+		if (paragraphText === '') {
+			return
+		}
+		const heading = parseAnchorHeading(paragraphText)
+		if (heading) {
+			anchorCount += 1
+			flushSection()
+			current = {
+				id: `section-${sections.length + 1}`,
+				title: heading.title,
+				level: heading.level,
+				parts: [],
 			}
 			return
 		}
-
-		if (node.type === 'text') {
-			appendText(node.data ?? '')
-		}
-	}
-
-	root.contents().each((index: number, node: cheerio.AnyNode) => {
-		void index
-		walk(node)
+		appendParagraph(paragraphText)
 	})
 
 	flushSection()
@@ -151,29 +113,55 @@ function buildOutlineFromHtml(html: string): OutlineBuildResult {
 	return { sections, anchorCount }
 }
 
-export async function extractDocxOutline(filePath: string): Promise<DocxOutline> {
-	const buffer = await fs.readFile(filePath)
-	const [rawResult, htmlResult] = await Promise.all([mammoth.extractRawText({ buffer }), mammoth.convertToHtml({ buffer })])
 
-	const fullText = rawResult.value
-	const { sections, anchorCount } = buildOutlineFromHtml(htmlResult.value ?? '')
 
-	if (anchorCount === 0) {
-		return {
-			sections: [
-				{
-					id: 'section-1',
-					title: '全文',
-					level: 1,
-					text: fullText,
-				},
-			],
-			fullText,
-		}
-	}
+export type DocxSession={
+  id:string, //session-xxx
+  title:string, // 章节标题
+  level:number,// 章节层级
+  deepLevel:string[],// 深层级路径，如 ["1","2"] 表示 1.2
+  rawText:string,// 原始文本
+}
+export type DocxParagraph={
+  sessionId:string,//所属章节id
+  paragraphs:string[],//每段文本
+}
 
-	return {
-		sections,
-		fullText,
-	}
+function parseSessionFromHtml(html:string):DocxSession[]{
+
+}
+
+function splitParagraphsFromSession(sessions: DocxSession[]): DocxParagraph[] {
+
+}
+export class DocxDocument{
+  readonly sessions: DocxSession[]
+  readonly paragraphs: DocxParagraph[]
+  readonly paragraphMap: Map<string, DocxParagraph>
+ private constructor(private readonly buffer: Buffer, readonly rawText:string, readonly htmlText:string){
+this.sessions = parseSessionFromHtml(htmlText)
+this.paragraphs = splitParagraphsFromSession(this.sessions)
+this.paragraphMap = new Map(this.paragraphs.map(p => [p.sessionId, p]))
+
+ }
+ private static async parseFromBuffer(buffer: Buffer){
+  const [rawResult, htmlResult] = await Promise.all([mammoth.extractRawText({ buffer }), mammoth.convertToHtml({ buffer })])
+  return {
+   rawText: rawResult.value,
+   htmlText: htmlResult.value,
+  }
+ }
+ static async load(filePath: string): Promise<DocxDocument> {
+  const buffer = await fs.readFile(filePath)
+  const { rawText, htmlText } = await this.parseFromBuffer(buffer)
+  return new DocxDocument(buffer, rawText, htmlText)
+ }
+
+ findSessionById(sessionId: string): DocxSession | undefined {
+  return this.sessions.find(s => s.id === sessionId)
+ }
+
+ findParagraphById(sessionId: string): DocxParagraph | undefined {
+  return this.paragraphMap.get(sessionId)
+ }
 }
