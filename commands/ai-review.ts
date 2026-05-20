@@ -58,25 +58,26 @@ function formatIssues(issues: AiReviewIssue[]): string {
 
 function formatStreamMessages(messages: BaseMessage[]): unknown[] {
 	const lines: unknown[] = []
-	const fmtObjectString = (obj: string) => {
+	const replaceNewlines = (text: string) => text.replaceAll('\\n', '\n')
+	const fmtObjectString = (objString: string) => {
 		try {
-			return JSON.parse(obj)
+			return JSON.parse(objString)
 		} catch {
-			return obj
+			return objString
 		}
 	}
 	messages.forEach((msg) => {
 		if (ToolMessage.isInstance(msg)) {
-			lines.push(`[工具调用] ${msg.name} arguments:`)
+			lines.push(`[工具调用] ${msg.name}`)
 			if (typeof msg.content === 'string') {
 				lines.push(fmtObjectString(msg.content))
 			} else {
 				lines.push('[Text Blocks]')
 			}
 		} else if (HumanMessage.isInstance(msg)) {
-			lines.push(`[用户] ${msg.text}`)
+			lines.push(`[用户] ${replaceNewlines(msg.text)}`)
 		} else if (AIMessage.isInstance(msg)) {
-			lines.push(`[AI] ${msg.text}`)
+			lines.push(`[AI] ${replaceNewlines(msg.text)}`)
 		}
 	})
 	return lines
