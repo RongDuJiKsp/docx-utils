@@ -6,6 +6,7 @@ import { findSpace } from './commands/find-space'
 import { parseRefKind, parseRefMode, refs } from './commands/refs'
 import { aiReview } from './commands/ai-review'
 import { parseNonNegativeInteger } from './utils/numbers'
+import { ensureEnvLoaded } from './utils/env'
 
 type FindSpaceOptions = {
 	context: number
@@ -90,6 +91,8 @@ async function main() {
 	if (Bun.argv.length <= 2) {
 		program.help({ error: true })
 	}
+
+	ensureEnvLoaded()
 
 	await program.parseAsync(Bun.argv)
 }

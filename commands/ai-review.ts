@@ -4,8 +4,8 @@ import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools'
 import { BaseMessage, HumanMessage } from '@langchain/core/messages'
 import { createAgent } from 'langchain'
 import { extractDocxOutline, type DocxOutline } from '../utils/docx'
-import { loadAiReviewConfig } from '../utils/env'
-import { getAiProvider } from '../utils/ai/provider'
+import { parseNumber } from '../utils/env'
+import { getAiProviderFromEnv } from '../utils/ai/provider'
 
 export type AiReviewOptions = {
 	rules: string
@@ -177,25 +177,21 @@ function buildSystemPrompt() {
 export async function aiReview(fileName: string, options: AiReviewOptions) {
 	const outline = await extractDocxOutline(fileName)
 	const issues: AiReviewIssue[] = []
-
-	const config = loadAiReviewConfig({
-		maxIterations: options.maxIterations,
-	})
+	const maxIterations = Math.max(
+		1,
+		options.maxIterations ?? parseNumber(process.env.AI_REVIEW_MAX_ITERATIONS, 40, 'AI_REVIEW_MAX_ITERATIONS'),
+	)
 
 	const { outlineTool, sectionTool } = createOutlineTools(outline)
 	const rulesTool = createRulesTool(options.rules)
 	const issueTool = createIssueTool(issues)
 
-	const provider = getAiProvider(config.provider)
-	const model = provider.createModel({
-		apiKey: config.apiKey,
-		baseUrl: config.baseUrl,
-		model: config.model,
-		temperature: config.temperature,
-	})
+	const provider = getAiProviderFromEnv()
+	const modelConfig = provider.loadConfigFromEnv()
+	const model = provider.createModel(modelConfig)
 
 	if (!model) {
-		throw new Error(`模型创建失败: ${config.provider}`)
+		throw new Error(`模型创建失败: ${provider.id}`)
 	}
 
 	const tools = [rulesTool, outlineTool, sectionTool, issueTool]
@@ -204,7 +200,7 @@ export async function aiReview(fileName: string, options: AiReviewOptions) {
 		model,
 		systemPrompt: buildSystemPrompt(),
 		tools,
-	}).withConfig({ recursionLimit: config.maxIterations })
+	}).withConfig({ recursionLimit: maxIterations })
 
 	console.log('开始 AI 章节审查...')
 

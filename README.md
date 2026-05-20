@@ -63,6 +63,7 @@ docx-utils refs ./demo.docx table use
 AI 审查配置（.env / .env.local）：
 
 - `.env` 和 `.env.local` 都会被加载，`.env.local` 会覆盖同名配置。
+- provider 的 model/base URL 必须配置，否则会直接报错。
 - 支持 `openai` 和 `deepseek` provider。
 
 示例：

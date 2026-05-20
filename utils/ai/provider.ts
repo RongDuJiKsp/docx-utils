@@ -15,3 +15,8 @@ export function getAiProvider(providerId: ProviderId): AiProvider {
 
 	return provider
 }
+
+export function getAiProviderFromEnv(): AiProvider {
+	const raw = (process.env.AI_PROVIDER ?? 'openai').toLowerCase()
+	return getAiProvider(raw as ProviderId)
+}
