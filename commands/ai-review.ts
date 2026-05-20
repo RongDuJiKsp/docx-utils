@@ -231,6 +231,7 @@ export async function aiReview(fileName: string, options: AiReviewOptions) {
 		console.log('Recv Messages:')
 		formatStreamMessages(messages).forEach((line) => console.log(line))
 	}
+	console.log('----------------AI 章节审查完成----------------')
 	console.log('审查完成，发现问题数: ' + issues.length)
 	console.log(formatIssues(issues))
 }
