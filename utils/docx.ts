@@ -27,7 +27,7 @@ type OutlineBuildResult = {
 
 const BLOCK_TAGS = new Set(['p', 'div', 'blockquote', 'pre', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th'])
 
-const ANCHOR_HEADING_RE = /^(\d+(?:\.\d+)+)\s+(.+)$/
+const ANCHOR_NUMBER_RE = /^\d+(?:\.\d+)+$/
 
 function normalizeTitle(text: string): string {
 	return text.replace(/\s+/g, ' ').trim()
@@ -45,18 +45,12 @@ function normalizeSectionText(text: string): string {
 
 function parseAnchorHeading(text: string): { level: number; title: string } | null {
 	const normalized = normalizeTitle(text)
-	const match = ANCHOR_HEADING_RE.exec(normalized)
-	if (!match) {
+	const [numbering,title] = normalized.split(/\s+/)
+	if (!numbering || !title||!ANCHOR_NUMBER_RE.test(numbering)) {
 		return null
 	}
-  const [,rawNumbering, rawTitle] = match
-  	if (!rawNumbering || !rawTitle) {
-		return null
-	}
-	const numbering = rawNumbering
-	const title = rawTitle.trim()
 	const level = numbering.split('.').length
-	return { level, title: title || '无标题' }
+	return { level, title }
 }
 
 function buildOutlineFromHtml(html: string): OutlineBuildResult {
