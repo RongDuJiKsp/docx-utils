@@ -101,5 +101,6 @@ main().catch((error: unknown) => {
 	const message = error instanceof Error ? error.message : String(error)
 	console.error(`执行失败: ${message}`)
 	console.error('错误栈:', error instanceof Error ? error.stack : '无')
-	process.exit(1)
+	console.log('原始错误：\n\n')
+	throw error
 })
