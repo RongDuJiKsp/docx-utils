@@ -19,6 +19,6 @@ export type ModelFactory = (config: ModelConfig) => BaseChatModel
 
 export interface AiProvider {
 	readonly id: ProviderId
-	createModel(config: ModelConfig): BaseChatModel
+	createModel(config: ModelConfig): BaseChatModel|null
 	streamingInvokeIterator(agent: Agent, beforeMessages: BaseMessage[]): Promise<() => AsyncGenerator<BaseMessage[], void>>
 }
