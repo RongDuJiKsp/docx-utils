@@ -3,9 +3,9 @@ import { z } from 'zod'
 import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools'
 import { BaseMessage, HumanMessage } from '@langchain/core/messages'
 import { createAgent } from 'langchain'
-import { extractDocxOutline, type DocxOutline } from '../utils/docx'
 import { parseNumber } from '../utils/env'
 import { getAiProviderFromEnv } from '../utils/ai/provider'
+import { DocxDocument } from '../utils/docx'
 
 export type AiReviewOptions = {
 	rules: string
@@ -86,9 +86,8 @@ function createRulesTool(rulesPath: string) {
 	})
 }
 
-function createOutlineTools(outline: DocxOutline) {
-	const sections = outline.sections
-	const sectionMap = new Map(sections.map((section) => [section.id, section]))
+function createOutlineTools(document: DocxDocument) {
+	const sections = document.sessions
 
 	const sectionSchema = z.object({
 		sectionId: z.string().describe('章节 id'),
@@ -116,16 +115,17 @@ function createOutlineTools(outline: DocxOutline) {
 		schema: sectionSchema,
 		func: async (input: SectionInput) => {
 			const { sectionId } = input
-			const section = sectionMap.get(sectionId)
+			const section = document.findSessionById(sectionId)
 			if (!section) {
 				throw new Error(`未找到章节: ${sectionId}`)
 			}
+			const paragraph = document.findParagraphById(sectionId)
 
 			return JSON.stringify({
 				id: section.id,
 				title: section.title,
 				level: section.level,
-				text: section.text,
+				text: paragraph ? paragraph.paragraphs.join('\n') : '',
 			})
 		},
 	})
@@ -175,14 +175,14 @@ function buildSystemPrompt() {
 }
 
 export async function aiReview(fileName: string, options: AiReviewOptions) {
-	const outline = await extractDocxOutline(fileName)
+	const document = await DocxDocument.load(fileName)
 	const issues: AiReviewIssue[] = []
 	const maxIterations = Math.max(
 		1,
 		options.maxIterations ?? parseNumber(process.env.AI_REVIEW_MAX_ITERATIONS, 40, 'AI_REVIEW_MAX_ITERATIONS'),
 	)
 
-	const { outlineTool, sectionTool } = createOutlineTools(outline)
+	const { outlineTool, sectionTool } = createOutlineTools(document)
 	const rulesTool = createRulesTool(options.rules)
 	const issueTool = createIssueTool(issues)
 
@@ -208,7 +208,7 @@ export async function aiReview(fileName: string, options: AiReviewOptions) {
 		new HumanMessage([
 			`目标文件: ${fileName}`,
 			`规则文件: ${options.rules}`,
-			`章节数: ${outline.sections.length}`,
+			`章节数: ${document.sessions.length}`,
 			'请按工具流程执行审查。',
 		].join('\n')),
 	]

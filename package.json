@@ -22,7 +22,9 @@
 		"@langchain/openai": "^1.4.6",
 		"cheerio": "^1.0.0",
 		"commander": "^14.0.3",
+		"domhandler": "^6.0.1",
 		"dotenv": "^16.4.5",
+		"ix": "^7.0.0",
 		"langchain": "^1.4.1",
 		"mammoth": "^1.12.0",
 		"zod": "^3.23.8"

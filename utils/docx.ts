@@ -1,18 +1,8 @@
 import fs from 'fs/promises'
 import mammoth from 'mammoth'
-import * as cheerio from 'cheerio'
-
-export type DocxSection = {
-	id: string
-	title: string
-	level: number
-	text: string
-}
-
-export type DocxOutline = {
-	sections: DocxSection[]
-	fullText: string
-}
+import type { Cheerio, CheerioAPI } from 'cheerio'
+import { load } from 'cheerio'
+import type { Element } from 'domhandler'
 
 export async function extractRawText(filePath: string): Promise<string> {
 	const buffer = await fs.readFile(filePath)
@@ -20,148 +10,180 @@ export async function extractRawText(filePath: string): Promise<string> {
 	return result.value
 }
 
-type OutlineBuildResult = {
-	sections: DocxSection[]
-	anchorCount: number
-}
-
 const ANCHOR_NUMBER_RE = /^\d+(?:\.\d+)+$/
+const CHAPTER_NUMBER_RE = /^第(\d+)章$/
+const TOC_NODE_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, li'
 
-function normalizeTitle(text: string): string {
-	return text.replace(/\s+/g, ' ').trim()
-}
+export class DocxSession {
+	constructor(
+		readonly id: string,
+		readonly rawText: string,
+		readonly level: number,
+		readonly deepLevel: string[],
+		readonly title: string
+	) {}
 
-function normalizeSectionText(text: string): string {
-	return text
-		.replace(/\r/g, '')
-		.replace(/[ \t]+\n/g, '\n')
-		.replace(/\n[ \t]+/g, '\n')
-		.replace(/\n{3,}/g, '\n\n')
-		.replace(/[ \t]{2,}/g, ' ')
-		.trim()
-}
-
-function parseAnchorHeading(text: string): { level: number; title: string } | null {
-	const normalized = normalizeTitle(text)
-	const [numbering, title] = normalized.split(/\s+/)
-	if (!numbering || !title || !ANCHOR_NUMBER_RE.test(numbering)) {
-		return null
-	}
-	const level = numbering.split('.').length
-	return { level, title }
-}
-
-function buildOutlineFromHtml(html: string): OutlineBuildResult {
-	const $ = cheerio.load(html || '')
-	const root = $('body').length > 0 ? $('body') : $.root()
-
-	const sections: DocxSection[] = []
-	let anchorCount = 0
-
-	let current: { id: string; title: string; level: number; parts: string[] } | null = null
-
-	const flushSection = () => {
-		if (!current) {
-			return
+	// 将标题文本解析为章节信息，支持两种格式：1）以数字点分隔的多级章节（如 "1.2.3"） 2）如果不符合上述格式，则将整个标题作为一级章节处理。
+	static parseTitleToEntry(text: string): Pick<DocxSession, 'level' | 'deepLevel' | 'title'> | null {
+		const [first, second] = text.split(/\s+/)
+		if (!first) {
+			return null
 		}
 
-		const text = normalizeSectionText(current.parts.join(''))
-		sections.push({
-			id: current.id,
-			title: current.title,
-			level: current.level,
-			text,
-		})
-		current = null
+		const chapterMatch = CHAPTER_NUMBER_RE.exec(first)
+		if (chapterMatch && chapterMatch[1]) {
+			const title = second || first
+			return { level: 1, deepLevel: [chapterMatch[1]], title }
+		}
+
+		if (ANCHOR_NUMBER_RE.test(first)) {
+			const deepLevel = first.split('.')
+			const title = second || first
+			return { level: deepLevel.length, deepLevel, title }
+		}
+
+		return { level: 1, deepLevel: [first], title: first }
 	}
 
-	const appendParagraph = (value: string) => {
-		if (!current) {
-			return
+	private static titleElement(nodeEl: Cheerio<Element>): Cheerio<Element> | null {
+		const anchors = nodeEl.find('a')
+		if (anchors.length !== 1) {
+			return null
 		}
-		const text = value.replace(/\s+/g, ' ').trim()
-		if (text === '') {
-			return
+		const anchorEl = anchors.first()
+		if (anchorEl.children().length !== 0) {
+			return null
 		}
-		current.parts.push(text)
-		current.parts.push('\n')
+		return anchorEl
 	}
 
-	root.find('p').each((index: number, node: cheerio.AnyNode) => {
-		void index
-		const paragraphText = normalizeTitle($(node).text())
-		if (paragraphText === '') {
+	private static titleParagraphElement(nodeEl: Cheerio<Element>): Cheerio<Element> | null {
+		if (nodeEl.children().length !== 0) {
+			return null
+		}
+		return nodeEl
+	}
+
+	// 从段落元素中提取标题文本，要求该段落下有且仅有一个子元素为 a 标签，且 a 标签下没有子元素
+	static getTitleFromParagraphElement(nodeEl: Cheerio<Element>): string | null {
+		const anchorEl = this.titleElement(nodeEl)
+		if (!anchorEl) {
+			return null
+		}
+		return anchorEl.text().trim() || null
+	}
+
+	// 判断给定元素是否为实例对应的标题元素 要求是段落元素，且下没有子元素
+	is(nodeEl: Cheerio<Element>): boolean {
+		const graphEl = DocxSession.titleParagraphElement(nodeEl)
+		if (!graphEl) {
+			return false
+		}
+		const text = graphEl.text().trim()
+		return text
+			.slice(0, 100)
+			.replaceAll(' ', '')
+			.startsWith([this.deepLevel.join('.'), this.title].join('').replaceAll(' ', ''))
+	}
+}
+
+export class DocxParagraph {
+	constructor(
+		readonly sessionId: string,
+		readonly paragraphs: string[]
+	) {}
+
+	static paragraphText(nodeEl: Cheerio<Element>): string | null {
+		if (nodeEl.children().length !== 0) {
+			return null
+		}
+		return nodeEl.text().trim() || null
+	}
+}
+
+function parseSessionFromHtml(html: string): DocxSession[] {
+	const $ = load(html)
+	const root = $.root()
+
+	const sessions: DocxSession[] = []
+	root.find(TOC_NODE_SELECTOR).each((_index, node) => {
+		const titleText = DocxSession.getTitleFromParagraphElement($(node))
+		if (!titleText) {
 			return
 		}
-		const heading = parseAnchorHeading(paragraphText)
-		if (heading) {
-			anchorCount += 1
-			flushSection()
-			current = {
-				id: `section-${sections.length + 1}`,
-				title: heading.title,
-				level: heading.level,
-				parts: [],
-			}
+		const parsed = DocxSession.parseTitleToEntry(titleText)
+		if (!parsed) {
 			return
 		}
-		appendParagraph(paragraphText)
+		sessions.push(new DocxSession(`session-${sessions.length + 1}`, titleText, parsed.level, parsed.deepLevel, parsed.title))
+	})
+	return sessions
+}
+
+function splitParagraphsFromSession(sessions: DocxSession[], html: string): DocxParagraph[] {
+	if (sessions.length === 0) {
+		return []
+	}
+	const $ = load(html)
+	const root = $.root()
+
+	const sessionIter = sessions[Symbol.iterator]()
+	const paragraphsBySession: string[][] = []
+
+	const docxPointer = {
+		ptrSession: sessionIter.next().value,
+		currSession: undefined as DocxSession | undefined,
+		currParagraphs: undefined as string[] | undefined,
+		nextSession() {
+			this.currSession = this.ptrSession
+			this.currParagraphs = []
+			paragraphsBySession.push(this.currParagraphs)
+			this.ptrSession = sessionIter.next().value
+		},
+	}
+
+	root.find(TOC_NODE_SELECTOR).each((_index: number, node: Element) => {
+		const nodeEl = $(node)
+		if (docxPointer.ptrSession?.is(nodeEl)) {
+			docxPointer.nextSession()
+			return
+		}
+		const paragraphText = DocxParagraph.paragraphText(nodeEl)
+		if (paragraphText && docxPointer.currParagraphs) {
+			docxPointer.currParagraphs.push(paragraphText)
+		}
 	})
 
-	flushSection()
-
-	return { sections, anchorCount }
+	return sessions.map((session, index) => new DocxParagraph(session.id, paragraphsBySession[index] ?? []))
 }
+export class DocxDocument {
+	readonly sessions: DocxSession[]
+	readonly paragraphs: DocxParagraph[]
+	readonly paragraphMap: Map<string, DocxParagraph>
+	private constructor(
+		readonly rawText: string,
+		readonly htmlText: string
+	) {
+		this.sessions = parseSessionFromHtml(htmlText)
+		this.paragraphs = splitParagraphsFromSession(this.sessions, htmlText)
+		this.paragraphMap = new Map(this.paragraphs.map((p) => [p.sessionId, p]))
+	}
 
+	static async load(filePath: string): Promise<DocxDocument> {
+		const buffer = await fs.readFile(filePath)
+		return this.loadFromBuffer(buffer)
+	}
 
+	static async loadFromBuffer(buffer: Buffer): Promise<DocxDocument> {
+		const [rawResult, htmlResult] = await Promise.all([mammoth.extractRawText({ buffer }), mammoth.convertToHtml({ buffer })])
+		return new DocxDocument(rawResult.value, htmlResult.value)
+	}
 
-export type DocxSession={
-  id:string, //session-xxx
-  title:string, // 章节标题
-  level:number,// 章节层级
-  deepLevel:string[],// 深层级路径，如 ["1","2"] 表示 1.2
-  rawText:string,// 原始文本
-}
-export type DocxParagraph={
-  sessionId:string,//所属章节id
-  paragraphs:string[],//每段文本
-}
+	findSessionById(sessionId: string): DocxSession | undefined {
+		return this.sessions.find((s) => s.id === sessionId)
+	}
 
-function parseSessionFromHtml(html:string):DocxSession[]{
-
-}
-
-function splitParagraphsFromSession(sessions: DocxSession[]): DocxParagraph[] {
-
-}
-export class DocxDocument{
-  readonly sessions: DocxSession[]
-  readonly paragraphs: DocxParagraph[]
-  readonly paragraphMap: Map<string, DocxParagraph>
- private constructor(private readonly buffer: Buffer, readonly rawText:string, readonly htmlText:string){
-this.sessions = parseSessionFromHtml(htmlText)
-this.paragraphs = splitParagraphsFromSession(this.sessions)
-this.paragraphMap = new Map(this.paragraphs.map(p => [p.sessionId, p]))
-
- }
- private static async parseFromBuffer(buffer: Buffer){
-  const [rawResult, htmlResult] = await Promise.all([mammoth.extractRawText({ buffer }), mammoth.convertToHtml({ buffer })])
-  return {
-   rawText: rawResult.value,
-   htmlText: htmlResult.value,
-  }
- }
- static async load(filePath: string): Promise<DocxDocument> {
-  const buffer = await fs.readFile(filePath)
-  const { rawText, htmlText } = await this.parseFromBuffer(buffer)
-  return new DocxDocument(buffer, rawText, htmlText)
- }
-
- findSessionById(sessionId: string): DocxSession | undefined {
-  return this.sessions.find(s => s.id === sessionId)
- }
-
- findParagraphById(sessionId: string): DocxParagraph | undefined {
-  return this.paragraphMap.get(sessionId)
- }
+	findParagraphById(sessionId: string): DocxParagraph | undefined {
+		return this.paragraphMap.get(sessionId)
+	}
 }
