@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import { z } from 'zod'
 import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools'
-import { BaseMessage, HumanMessage } from '@langchain/core/messages'
+import { AIMessage, BaseMessage, HumanMessage, ToolMessage } from '@langchain/core/messages'
 import { createAgent } from 'langchain'
 import { parseNumber } from '../utils/env'
 import { getAiProviderFromEnv } from '../utils/ai/provider'
@@ -54,6 +54,30 @@ function formatIssues(issues: AiReviewIssue[]): string {
 	}
 
 	return lines.join('\n')
+}
+
+function formatStreamMessages(messages: BaseMessage[]): unknown[] {
+	const lines: unknown[] = []
+	const fmtObjectString = (obj: string) => {
+try{	return JSON.parse(obj)}
+	catch{
+		return obj
+	}}
+	 messages.forEach((msg) => {
+		if (ToolMessage.isInstance(msg)) {
+			lines.push(`[工具调用] ${msg.name} arguments:`)
+			if(typeof msg.content === 'string') {
+				lines.push(fmtObjectString(msg.content))
+			}else{
+				lines.push('[Text Blocks]')
+			}
+		} else if (HumanMessage.isInstance(msg)) {
+			lines.push(`[用户] ${msg.text}`)
+		} else if (AIMessage.isInstance(msg)) {
+			lines.push(`[AI] ${msg.text}`)
+		}
+	})
+	return lines
 }
 
 function createRulesTool(rulesPath: string) {
@@ -204,8 +228,8 @@ export async function aiReview(fileName: string, options: AiReviewOptions) {
 
 	for await (const messages of iterator) {
 		console.log("Recv Messages:");
-		console.log(messages);
+		formatStreamMessages(messages).forEach((line) => console.log(line))
 	}
-
+	console.log('审查完成，发现问题数: ' + issues.length)
 	console.log(formatIssues(issues))
 }
