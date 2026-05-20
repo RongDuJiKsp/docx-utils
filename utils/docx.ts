@@ -60,7 +60,7 @@ export class DocxSession {
 		if (anchorEl.children(`:not(${STYLE_NODE_SELECTOR})`).length !== 0) {
 			return null
 		}
-		if(anchorEl.text().trim() === '') {
+		if (anchorEl.text().trim() === '') {
 			return null
 		}
 		return anchorEl

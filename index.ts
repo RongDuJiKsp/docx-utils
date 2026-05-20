@@ -100,6 +100,6 @@ async function main() {
 main().catch((error: unknown) => {
 	const message = error instanceof Error ? error.message : String(error)
 	console.error(`执行失败: ${message}`)
-  console.error('错误栈:', error instanceof Error ? error.stack : '无')
+	console.error('错误栈:', error instanceof Error ? error.stack : '无')
 	process.exit(1)
 })

@@ -36,7 +36,10 @@ export class DeepseekProvider implements AiProvider {
 		})
 
 		return async function* () {
-			for await (const chunk of streamingResponse as AsyncIterable<{ model_request?: { messages?: BaseMessage[] }; tools?: { messages?: BaseMessage[] } }>) {
+			for await (const chunk of streamingResponse as AsyncIterable<{
+				model_request?: { messages?: BaseMessage[] }
+				tools?: { messages?: BaseMessage[] }
+			}>) {
 				yield chunk.model_request?.messages || chunk.tools?.messages || []
 			}
 		}

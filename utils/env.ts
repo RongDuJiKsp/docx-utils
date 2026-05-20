@@ -29,4 +29,3 @@ export function requireEnv(value: string | undefined, label: string): string {
 
 	return value.trim()
 }
-

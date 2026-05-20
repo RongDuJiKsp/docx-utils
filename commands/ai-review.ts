@@ -59,16 +59,18 @@ function formatIssues(issues: AiReviewIssue[]): string {
 function formatStreamMessages(messages: BaseMessage[]): unknown[] {
 	const lines: unknown[] = []
 	const fmtObjectString = (obj: string) => {
-try{	return JSON.parse(obj)}
-	catch{
-		return obj
-	}}
-	 messages.forEach((msg) => {
+		try {
+			return JSON.parse(obj)
+		} catch {
+			return obj
+		}
+	}
+	messages.forEach((msg) => {
 		if (ToolMessage.isInstance(msg)) {
 			lines.push(`[工具调用] ${msg.name} arguments:`)
-			if(typeof msg.content === 'string') {
+			if (typeof msg.content === 'string') {
 				lines.push(fmtObjectString(msg.content))
-			}else{
+			} else {
 				lines.push('[Text Blocks]')
 			}
 		} else if (HumanMessage.isInstance(msg)) {
@@ -180,17 +182,14 @@ function buildSystemPrompt() {
 }
 
 export async function aiReview(fileName: string, options: AiReviewOptions) {
-	console.log("开始解析Docx文件...");
+	console.log('开始解析Docx文件...')
 	const document = await DocxDocument.load(fileName)
 	console.log(`文档解析完成，发现 ${document.sessions.length} 个章节。`)
 	for (const session of document.sessions) {
 		console.log(`章节: ${session.id}, 标题: ${session.toTitle()}, 层级: ${session.level}`)
 	}
 	const issues: AiReviewIssue[] = []
-	const maxIterations = Math.max(
-		1,
-		options.maxIterations ?? parseNumber(process.env.AI_REVIEW_MAX_ITERATIONS, 40, 'AI_REVIEW_MAX_ITERATIONS'),
-	)
+	const maxIterations = Math.max(1, options.maxIterations ?? parseNumber(process.env.AI_REVIEW_MAX_ITERATIONS, 40, 'AI_REVIEW_MAX_ITERATIONS'))
 
 	const { outlineTool, sectionTool } = createOutlineTools(document)
 	const rulesTool = createRulesTool(options.rules)
@@ -215,19 +214,16 @@ export async function aiReview(fileName: string, options: AiReviewOptions) {
 	console.log('开始 AI 章节审查...')
 
 	const beforeMessages = [
-		new HumanMessage([
-			`目标文件: ${fileName}`,
-			`规则文件: ${options.rules}`,
-			`章节数: ${document.sessions.length}`,
-			'请按工具流程执行审查。',
-		].join('\n')),
+		new HumanMessage(
+			[`目标文件: ${fileName}`, `规则文件: ${options.rules}`, `章节数: ${document.sessions.length}`, '请按工具流程执行审查。'].join('\n')
+		),
 	]
 
 	const iteratorFactory = await provider.streamingInvokeIterator(agent, beforeMessages)
 	const iterator = iteratorFactory()
 
 	for await (const messages of iterator) {
-		console.log("Recv Messages:");
+		console.log('Recv Messages:')
 		formatStreamMessages(messages).forEach((line) => console.log(line))
 	}
 	console.log('审查完成，发现问题数: ' + issues.length)

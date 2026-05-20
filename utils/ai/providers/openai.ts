@@ -31,10 +31,7 @@ export class OpenAiProvider implements AiProvider {
 	}
 
 	async streamingInvokeIterator(agent: Agent, beforeMessages: BaseMessage[]) {
-		const stream = await agent.stream(
-			{ messages: beforeMessages },
-			{ streamMode: 'values' },
-		)
+		const stream = await agent.stream({ messages: beforeMessages }, { streamMode: 'values' })
 
 		return async function* () {
 			for await (const chunk of stream as AsyncIterable<{ messages?: BaseMessage[] }>) {

@@ -20,6 +20,6 @@ export type ModelFactory = (config: ModelConfig) => BaseChatModel
 export interface AiProvider {
 	readonly id: ProviderId
 	loadConfigFromEnv(overrides?: Partial<ModelConfigParam>): ModelConfig
-	createModel(config: ModelConfig): BaseChatModel|null
+	createModel(config: ModelConfig): BaseChatModel | null
 	streamingInvokeIterator(agent: Agent, beforeMessages: BaseMessage[]): Promise<() => AsyncGenerator<BaseMessage[], void>>
 }
