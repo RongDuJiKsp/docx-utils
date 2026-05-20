@@ -22,18 +22,12 @@ export async function extractRawText(filePath: string): Promise<string> {
 
 type OutlineBuildResult = {
 	sections: DocxSection[]
-	headingCount: number
+	anchorCount: number
 }
 
 const BLOCK_TAGS = new Set(['p', 'div', 'blockquote', 'pre', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th'])
 
-function isHeadingTag(tagName: string | undefined): tagName is 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' {
-	return !!tagName && /^h[1-6]$/.test(tagName)
-}
-
-function headingLevel(tagName: string): number {
-	return Number(tagName.slice(1))
-}
+const ANCHOR_HEADING_RE = /^(\d+(?:\.\d+)+)\s+(.+)$/
 
 function normalizeTitle(text: string): string {
 	return text.replace(/\s+/g, ' ').trim()
@@ -49,12 +43,28 @@ function normalizeSectionText(text: string): string {
 		.trim()
 }
 
+function parseAnchorHeading(text: string): { level: number; title: string } | null {
+	const normalized = normalizeTitle(text)
+	const match = ANCHOR_HEADING_RE.exec(normalized)
+	if (!match) {
+		return null
+	}
+  const [,rawNumbering, rawTitle] = match
+  	if (!rawNumbering || !rawTitle) {
+		return null
+	}
+	const numbering = rawNumbering
+	const title = rawTitle.trim()
+	const level = numbering.split('.').length
+	return { level, title: title || '无标题' }
+}
+
 function buildOutlineFromHtml(html: string): OutlineBuildResult {
 	const $ = cheerio.load(html || '')
 	const root = $('body').length > 0 ? $('body') : $.root()
 
 	const sections: DocxSection[] = []
-	let headingCount = 0
+	let anchorCount = 0
 
 	let current: { id: string; title: string; level: number; parts: string[] } | null = null
 
@@ -105,17 +115,19 @@ function buildOutlineFromHtml(html: string): OutlineBuildResult {
 		if (node.type === 'tag') {
 			const tagName = node.tagName?.toLowerCase()
 
-			if (isHeadingTag(tagName)) {
-				headingCount += 1
-				flushSection()
-				const title = normalizeTitle($(node).text())
-				current = {
-					id: `section-${sections.length + 1}`,
-					title: title || '无标题',
-					level: headingLevel(tagName),
-					parts: [],
+			if (tagName === 'a') {
+				const heading = parseAnchorHeading($(node).text())
+				if (heading) {
+					anchorCount += 1
+					flushSection()
+					current = {
+						id: `section-${sections.length + 1}`,
+						title: heading.title,
+						level: heading.level,
+						parts: [],
+					}
+					return
 				}
-				return
 			}
 
 			if (node.children) {
@@ -142,7 +154,7 @@ function buildOutlineFromHtml(html: string): OutlineBuildResult {
 
 	flushSection()
 
-	return { sections, headingCount }
+	return { sections, anchorCount }
 }
 
 export async function extractDocxOutline(filePath: string): Promise<DocxOutline> {
@@ -150,9 +162,9 @@ export async function extractDocxOutline(filePath: string): Promise<DocxOutline>
 	const [rawResult, htmlResult] = await Promise.all([mammoth.extractRawText({ buffer }), mammoth.convertToHtml({ buffer })])
 
 	const fullText = rawResult.value
-	const { sections, headingCount } = buildOutlineFromHtml(htmlResult.value ?? '')
+	const { sections, anchorCount } = buildOutlineFromHtml(htmlResult.value ?? '')
 
-	if (headingCount === 0) {
+	if (anchorCount === 0) {
 		return {
 			sections: [
 				{
