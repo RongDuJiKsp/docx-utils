@@ -12,6 +12,7 @@ export async function extractRawText(filePath: string): Promise<string> {
 
 const ANCHOR_NUMBER_RE = /^\d+(?:\.\d+)+$/
 const CHAPTER_NUMBER_RE = /^第(\d+)章$/
+const APPEND_NUMBER_RE = /^附录(.+)$/
 const TOC_NODE_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, li'
 
 export class DocxSession {
@@ -23,26 +24,28 @@ export class DocxSession {
 		readonly title: string
 	) {}
 
-	// 将标题文本解析为章节信息，支持两种格式：1）以数字点分隔的多级章节（如 "1.2.3"） 2）如果不符合上述格式，则将整个标题作为一级章节处理。
+	// 将标题文本解析为章节信息，支持四种格式：1）以数字点分隔的多级章节（如 "1.2.3"） 2）以 "第X章" 格式表示的章节 3）以 "附录X" 格式表示的章节 4）如果不符合上述格式，则将整个标题作为一级章节处理。
 	static parseTitleToEntry(text: string): Pick<DocxSession, 'level' | 'deepLevel' | 'title'> | null {
-		const [first, second] = text.split(/\s+/)
+		const [first, ...others] = text.split(/\s+/)
+		const title = others?.slice(0, -1).join(' ')
 		if (!first) {
 			return null
 		}
 
-		const chapterMatch = CHAPTER_NUMBER_RE.exec(first)
-		if (chapterMatch && chapterMatch[1]) {
-			const title = second || first
-			return { level: 1, deepLevel: [chapterMatch[1]], title }
+		if (CHAPTER_NUMBER_RE.test(first)) {
+			return { level: 1, deepLevel: [first], title }
+		}
+
+		if (APPEND_NUMBER_RE.test(first)) {
+			return { level: 1, deepLevel: [first], title }
 		}
 
 		if (ANCHOR_NUMBER_RE.test(first)) {
 			const deepLevel = first.split('.')
-			const title = second || first
 			return { level: deepLevel.length, deepLevel, title }
 		}
 
-		return { level: 1, deepLevel: [first], title: first }
+		return { level: 1, deepLevel: [first], title: '' }
 	}
 
 	private static titleElement(nodeEl: Cheerio<Element>): Cheerio<Element> | null {
@@ -84,6 +87,10 @@ export class DocxSession {
 			.slice(0, 100)
 			.replaceAll(' ', '')
 			.startsWith([this.deepLevel.join('.'), this.title].join('').replaceAll(' ', ''))
+	}
+
+	toTitle(): string {
+		return `${this.deepLevel.join('.')} ${this.title}`
 	}
 }
 
@@ -176,7 +183,8 @@ export class DocxDocument {
 
 	static async loadFromBuffer(buffer: Buffer): Promise<DocxDocument> {
 		const [rawResult, htmlResult] = await Promise.all([mammoth.extractRawText({ buffer }), mammoth.convertToHtml({ buffer })])
-		return new DocxDocument(rawResult.value, htmlResult.value)
+		// convertToHtml 没有rootElement 这里补个body方便找root
+		return new DocxDocument(rawResult.value, `<body>${htmlResult.value}</body>`)
 	}
 
 	findSessionById(sessionId: string): DocxSession | undefined {

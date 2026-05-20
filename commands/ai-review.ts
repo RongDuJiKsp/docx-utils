@@ -102,7 +102,7 @@ function createOutlineTools(document: DocxDocument) {
 				totalSections: sections.length,
 				sections: sections.map((section) => ({
 					id: section.id,
-					title: section.title,
+					title: section.toTitle(),
 					level: section.level,
 				})),
 			})
@@ -123,7 +123,7 @@ function createOutlineTools(document: DocxDocument) {
 
 			return JSON.stringify({
 				id: section.id,
-				title: section.title,
+				title: section.toTitle(),
 				level: section.level,
 				text: paragraph ? paragraph.paragraphs.join('\n') : '',
 			})
@@ -175,7 +175,12 @@ function buildSystemPrompt() {
 }
 
 export async function aiReview(fileName: string, options: AiReviewOptions) {
+	console.log("开始解析Docx文件...");
 	const document = await DocxDocument.load(fileName)
+	console.log(`文档解析完成，发现 ${document.sessions.length} 个章节。`)
+	for (const session of document.sessions) {
+		console.log(`章节: ${session.id}, 标题: ${session.toTitle()}, 层级: ${session.level}`)
+	}
 	const issues: AiReviewIssue[] = []
 	const maxIterations = Math.max(
 		1,
