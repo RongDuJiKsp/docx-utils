@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv'
 import path from 'path'
 
-export type AiProvider = 'openai'
+export type AiProvider = 'openai' | 'deepseek'
 
 export type AiReviewConfig = {
 	provider: AiProvider
@@ -45,19 +45,29 @@ export function loadAiReviewConfig(overrides: AiReviewOverrides = {}): AiReviewC
 	loadEnvFiles()
 
 	const providerRaw = (process.env.AI_PROVIDER ?? 'openai').toLowerCase()
-	if (providerRaw !== 'openai') {
+	if (providerRaw !== 'openai' && providerRaw !== 'deepseek') {
 		throw new Error(`暂不支持的 provider: ${providerRaw}`)
 	}
 
-	const model = overrides.model ?? process.env.OPENAI_MODEL ?? 'gpt-4o-mini'
+	const provider = providerRaw as AiProvider
+
+	const model =
+		overrides.model ??
+		(provider === 'deepseek' ? process.env.DEEPSEEK_MODEL ?? 'deepseek-chat' : process.env.OPENAI_MODEL ?? 'gpt-4o-mini')
 	const temperature = overrides.temperature ?? parseNumber(process.env.AI_TEMPERATURE, 0.2, 'AI_TEMPERATURE')
 	const maxIterations = overrides.maxIterations ?? Math.max(1, parseNumber(process.env.AI_REVIEW_MAX_ITERATIONS, 40, 'AI_REVIEW_MAX_ITERATIONS'))
 
-	const apiKey = requireEnv(process.env.OPENAI_API_KEY, 'OPENAI_API_KEY')
-	const baseUrl = process.env.OPENAI_BASE_URL?.trim() || undefined
+	const apiKey = requireEnv(
+		provider === 'deepseek' ? process.env.DEEPSEEK_API_KEY : process.env.OPENAI_API_KEY,
+		provider === 'deepseek' ? 'DEEPSEEK_API_KEY' : 'OPENAI_API_KEY',
+	)
+	const baseUrl =
+		provider === 'deepseek'
+			? process.env.DEEPSEEK_BASE_URL?.trim() || 'https://api.deepseek.com/v1'
+			: process.env.OPENAI_BASE_URL?.trim() || undefined
 
 	return {
-		provider: 'openai',
+		provider,
 		model,
 		apiKey,
 		baseUrl,

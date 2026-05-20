@@ -63,7 +63,7 @@ docx-utils refs ./demo.docx table use
 AI 审查配置（.env / .env.local）：
 
 - `.env` 和 `.env.local` 都会被加载，`.env.local` 会覆盖同名配置。
-- 目前仅支持 `openai` provider。
+- 支持 `openai` 和 `deepseek` provider。
 
 示例：
 
@@ -72,6 +72,17 @@ AI_PROVIDER=openai
 OPENAI_API_KEY=your_api_key
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4o-mini
+AI_REVIEW_MAX_ITERATIONS=40
+AI_TEMPERATURE=0.2
+```
+
+DeepSeek 示例：
+
+```bash
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+DEEPSEEK_MODEL=deepseek-chat
 AI_REVIEW_MAX_ITERATIONS=40
 AI_TEMPERATURE=0.2
 ```

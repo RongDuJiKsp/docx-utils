@@ -1,8 +1,10 @@
 import type { AiProvider, ProviderId } from './types'
-import { GlobalOpenAiProvider } from './openai'
+import { GlobalOpenAiProvider } from './providers/openai'
+import { GlobalDeepseekProvider } from './providers/deepseek'
 
 const PROVIDERS: Record<ProviderId, AiProvider> = {
 	openai: GlobalOpenAiProvider,
+	deepseek: GlobalDeepseekProvider,
 }
 
 export function getAiProvider(providerId: ProviderId): AiProvider {
