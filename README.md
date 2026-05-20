@@ -65,27 +65,6 @@ AI 审查配置（.env / .env.local）：
 - `.env` 和 `.env.local` 都会被加载，`.env.local` 会覆盖同名配置。
 - provider 的 model/base URL 必须配置，否则会直接报错。
 - 支持 `openai` 和 `deepseek` provider。
-
-示例：
-
-```bash
-AI_PROVIDER=openai
-OPENAI_API_KEY=your_api_key
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o-mini
-AI_REVIEW_MAX_ITERATIONS=40
-AI_TEMPERATURE=0.2
-```
-
-DeepSeek 示例：
-
-```bash
-AI_PROVIDER=deepseek
-DEEPSEEK_API_KEY=your_api_key
-DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-chat
-AI_REVIEW_MAX_ITERATIONS=40
-AI_TEMPERATURE=0.2
-```
+- 示例已放在项目根目录的 `.env` 文件中。
 
 This project was created using `bun init` in bun v1.3.1. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
