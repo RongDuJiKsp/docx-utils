@@ -89,7 +89,7 @@ refs:
 )
 
 async function main() {
-	if (Deno.args.length <= 2) {
+	if (process.argv.length <= 2) {
 		program.help({ error: true })
 	}
 
