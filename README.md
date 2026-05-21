@@ -66,5 +66,3 @@ AI 审查配置（.env / .env.local）：
 - provider 的 model/base URL 必须配置，否则会直接报错。
 - 支持 `openai` 和 `deepseek` provider。
 - 示例已放在项目根目录的 `.env` 文件中。
-
-

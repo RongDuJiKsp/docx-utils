@@ -1,0 +1,32 @@
+{
+  "name": "@your/docx-utils",
+  "lock": true,
+  "nodeModulesDir": "auto",
+  "tasks": {
+    "run": "deno run -A index.ts",
+    "build": "deno compile --allow-all --output out/docx-utils index.ts",
+    "fmt": "deno fmt",
+    "lint": "deno lint --fix",
+    "codestyle": "deno task fmt && deno task lint"
+  },
+  "imports": {
+    "@langchain/core": "npm:@langchain/core@^1.1.47",
+    "@langchain/langgraph": "npm:@langchain/langgraph@^1.3.2",
+    "@langchain/openai": "npm:@langchain/openai@^1.4.6",
+    "cheerio": "npm:cheerio@^1.0.0",
+    "commander": "npm:commander@^14.0.3",
+    "domhandler": "npm:domhandler@^6.0.1",
+    "dotenv": "npm:dotenv@^16.4.5",
+    "ix": "npm:ix@^7.0.0",
+    "langchain": "npm:langchain@^1.4.1",
+    "mammoth": "npm:mammoth@^1.12.0",
+    "zod": "npm:zod@^3.23.8"
+  },
+  "compilerOptions": {
+    "strict": true
+  },
+  "fmt": {
+    "singleQuote": true,
+    "semiColons": false
+  }
+}
