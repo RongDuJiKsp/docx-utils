@@ -1,9 +1,10 @@
 {
   "name": "@rdjksp/docx-utils",
   "version": "0.3.0",
-  "exports":"./index.js",
+  "exports":"./index.ts",
   "lock": true,
   "nodeModulesDir": "auto",
+  "license": "MIT",
   "tasks": {
     "run": "deno run -A index.ts",
     "build": "deno compile --allow-all --output out/docx-utils index.ts",
