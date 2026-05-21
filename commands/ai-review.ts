@@ -1,4 +1,4 @@
-import fs from 'fs/promises'
+import fs from 'node:fs/promises'
 import { z } from 'zod'
 import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools'
 import { AIMessage, BaseMessage, HumanMessage, ToolMessage } from '@langchain/core/messages'
