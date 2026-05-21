@@ -4,6 +4,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
+		"run": "deno run -A index.ts",
+		"build": "deno compile --allow-all --output out/docx-utils index.ts",
 		"format": "deno lint --fix"
 	},
 	"bin": {

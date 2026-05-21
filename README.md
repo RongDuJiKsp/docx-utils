@@ -9,17 +9,17 @@ deno install
 To run:
 
 ```bash
-deno run index.ts echo ./demo.docx
-deno run index.ts find-space ./demo.docx
-deno run index.ts find-space ./demo.docx 5
-deno run index.ts find-space ./demo.docx 5 12
-deno run index.ts find-space ./demo.docx 5 12 --context 20
-deno run index.ts refs ./demo.docx pic def
-deno run index.ts refs ./demo.docx pic use
-deno run index.ts refs ./demo.docx table def
-deno run index.ts refs ./demo.docx table use
-deno run index.ts ai-review ./demo.docx --rules ./rules.md
-deno run index.ts ai-review ./demo.docx --rules ./rules.md --max-iterations 20
+docx-utils echo ./demo.docx
+docx-utils find-space ./demo.docx
+docx-utils find-space ./demo.docx 5
+docx-utils find-space ./demo.docx 5 12
+docx-utils find-space ./demo.docx 5 12 --context 20
+docx-utils refs ./demo.docx pic def
+docx-utils refs ./demo.docx pic use
+docx-utils refs ./demo.docx table def
+docx-utils refs ./demo.docx table use
+docx-utils ai-review ./demo.docx --rules ./rules.md
+docx-utils ai-review ./demo.docx --rules ./rules.md --max-iterations 20
 ```
 
 CLI commands:
