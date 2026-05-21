@@ -1,12 +1,13 @@
 #!/usr/bin/env -S deno run -A
 
 import { Command } from 'commander'
-import { echo } from './commands/echo'
-import { findSpace } from './commands/find-space'
-import { parseRefKind, parseRefMode, refs } from './commands/refs'
-import { aiReview } from './commands/ai-review'
-import { parseNonNegativeInteger } from './utils/numbers'
-import { ensureEnvLoaded } from './utils/env'
+import { echo } from './commands/echo.ts'
+import { findSpace } from './commands/find-space.ts'
+import { parseRefKind, parseRefMode, refs } from './commands/refs.ts'
+import { aiReview } from './commands/ai-review.ts'
+import { parseNonNegativeInteger } from './utils/numbers.ts'
+import { ensureEnvLoaded } from './utils/env.ts'
+import process from "node:process";
 
 type FindSpaceOptions = {
 	context: number

@@ -1,4 +1,4 @@
-import { extractRawText } from '../utils/docx'
+import { extractRawText } from '../utils/docx.ts'
 
 export async function echo(fileName: string) {
 	const text = await extractRawText(fileName)

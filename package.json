@@ -4,7 +4,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"format": "prettier --write ."
+		"format": "deno lint --fix"
 	},
 	"bin": {
 		"docx-utils": "./index.ts"

@@ -1,6 +1,7 @@
-import type { AiProvider, ProviderId } from './types'
-import { GlobalOpenAiProvider } from './providers/openai'
-import { GlobalDeepseekProvider } from './providers/deepseek'
+import type { AiProvider, ProviderId } from './types.ts'
+import { GlobalOpenAiProvider } from './providers/openai.ts'
+import { GlobalDeepseekProvider } from './providers/deepseek.ts'
+import process from "node:process";
 
 const PROVIDERS: Record<ProviderId, AiProvider> = {
 	openai: GlobalOpenAiProvider,

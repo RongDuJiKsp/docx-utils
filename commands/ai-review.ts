@@ -3,9 +3,10 @@ import { z } from 'zod'
 import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools'
 import { AIMessage, BaseMessage, HumanMessage, ToolMessage } from '@langchain/core/messages'
 import { createAgent } from 'langchain'
-import { parseNumber } from '../utils/env'
-import { getAiProviderFromEnv } from '../utils/ai/provider'
-import { DocxDocument } from '../utils/docx'
+import { parseNumber } from '../utils/env.ts'
+import { getAiProviderFromEnv } from '../utils/ai/provider.ts'
+import { DocxDocument } from '../utils/docx.ts'
+import process from "node:process";
 
 export type AiReviewOptions = {
 	rules: string

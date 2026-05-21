@@ -1,5 +1,5 @@
-import { extractRawText } from '../utils/docx'
-import { resolveSliceRange } from '../utils/slice'
+import { extractRawText } from '../utils/docx.ts'
+import { resolveSliceRange } from '../utils/slice.ts'
 
 export async function findSpace(filePath: string, arg1?: number, arg2?: number, context = 10) {
 	const text = await extractRawText(filePath)

@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv'
 import path from 'path'
+import process from "node:process";
 
 export function ensureEnvLoaded() {
 	const cwd = process.cwd()

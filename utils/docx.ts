@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises'
 import mammoth from 'mammoth'
-import type { Cheerio, CheerioAPI } from 'cheerio'
+import type { Cheerio } from 'cheerio'
 import { load } from 'cheerio'
 import type { Element } from 'domhandler'
+import { Buffer } from "node:buffer";
 
 export async function extractRawText(filePath: string): Promise<string> {
 	const buffer = await fs.readFile(filePath)

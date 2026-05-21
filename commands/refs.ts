@@ -1,4 +1,4 @@
-import { extractRawText } from '../utils/docx'
+import { extractRawText } from '../utils/docx.ts'
 
 export type RefKind = 'table' | 'pic'
 export type RefMode = 'def' | 'use'

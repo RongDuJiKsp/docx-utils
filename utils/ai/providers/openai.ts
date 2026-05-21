@@ -1,8 +1,9 @@
 import { ChatOpenAI } from '@langchain/openai'
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { BaseMessage } from '@langchain/core/messages'
-import type { Agent, AiProvider, ModelConfig, ModelConfigParam } from '../types'
-import { parseNumber, requireEnv } from '../../env'
+import type { Agent, AiProvider, ModelConfig, ModelConfigParam } from '../types.ts'
+import { parseNumber, requireEnv } from '../../env.ts'
+import process from "node:process";
 
 export class OpenAiProvider implements AiProvider {
 	readonly id = 'openai'
