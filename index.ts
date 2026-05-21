@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S deno run -A
 
 import { Command } from 'commander'
 import { echo } from './commands/echo'
@@ -88,13 +88,13 @@ refs:
 )
 
 async function main() {
-	if (Bun.argv.length <= 2) {
+	if (Deno.args.length <= 2) {
 		program.help({ error: true })
 	}
 
 	ensureEnvLoaded()
 
-	await program.parseAsync(Bun.argv)
+	await program.parseAsync(process.argv)
 }
 
 main().catch((error: unknown) => {

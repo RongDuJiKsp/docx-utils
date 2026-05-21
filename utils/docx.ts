@@ -1,4 +1,4 @@
-import fs from 'fs/promises'
+import fs from 'node:fs/promises'
 import mammoth from 'mammoth'
 import type { Cheerio, CheerioAPI } from 'cheerio'
 import { load } from 'cheerio'

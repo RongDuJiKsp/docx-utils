@@ -3,23 +3,23 @@
 To install dependencies:
 
 ```bash
-bun install
+deno install
 ```
 
 To run:
 
 ```bash
-bun run index.ts echo ./demo.docx
-bun run index.ts find-space ./demo.docx
-bun run index.ts find-space ./demo.docx 5
-bun run index.ts find-space ./demo.docx 5 12
-bun run index.ts find-space ./demo.docx 5 12 --context 20
-bun run index.ts refs ./demo.docx pic def
-bun run index.ts refs ./demo.docx pic use
-bun run index.ts refs ./demo.docx table def
-bun run index.ts refs ./demo.docx table use
-bun run index.ts ai-review ./demo.docx --rules ./rules.md
-bun run index.ts ai-review ./demo.docx --rules ./rules.md --max-iterations 20
+deno run index.ts echo ./demo.docx
+deno run index.ts find-space ./demo.docx
+deno run index.ts find-space ./demo.docx 5
+deno run index.ts find-space ./demo.docx 5 12
+deno run index.ts find-space ./demo.docx 5 12 --context 20
+deno run index.ts refs ./demo.docx pic def
+deno run index.ts refs ./demo.docx pic use
+deno run index.ts refs ./demo.docx table def
+deno run index.ts refs ./demo.docx table use
+deno run index.ts ai-review ./demo.docx --rules ./rules.md
+deno run index.ts ai-review ./demo.docx --rules ./rules.md --max-iterations 20
 ```
 
 CLI commands:
@@ -67,4 +67,4 @@ AI 审查配置（.env / .env.local）：
 - 支持 `openai` 和 `deepseek` provider。
 - 示例已放在项目根目录的 `.env` 文件中。
 
-This project was created using `bun init` in bun v1.3.1. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+
