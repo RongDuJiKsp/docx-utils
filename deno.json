@@ -6,8 +6,8 @@
   "nodeModulesDir": "auto",
   "license": "MIT",
   "tasks": {
-    "run": "deno run -A index.ts",
-    "build": "deno compile --allow-all --output out/docx-utils index.ts",
+    "run": "deno run -P index.ts",
+    "build": "deno compile -P --output out/docx-utils index.ts",
     "fmt": "deno fmt",
     "lint": "deno lint --fix",
     "codestyle": "deno task fmt && deno task lint"
@@ -31,5 +31,12 @@
   "fmt": {
     "singleQuote": true,
     "semiColons": false
+  },
+  "permissions": {
+    "default":{
+      "env":true,
+      "net":true,
+      "read":true
+    }
   }
 }
