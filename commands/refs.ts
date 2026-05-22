@@ -33,7 +33,7 @@ function buildRefsRegex(kind: RefKind, mode: RefMode): RegExp {
     return new RegExp(`(${id}) +(\\S+)`, 'g')
   }
 
-  return new RegExp(`(${id})(?=\\S|$|\\r|\\n)`, 'g')
+  return new RegExp(`(${id})(?=\\S|$|\\r|\\n)\\S*`, 'g')
 }
 
 function buildLineStarts(text: string): number[] {
