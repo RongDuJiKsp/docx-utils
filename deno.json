@@ -10,7 +10,8 @@
     "build": "deno compile -P --output out/docx-utils index.ts",
     "fmt": "deno fmt",
     "lint": "deno lint --fix",
-    "codestyle": "deno task fmt && deno task lint"
+    "codestyle": "deno task fmt && deno task lint",
+    "publish": "deno publish"
   },
   "imports": {
     "@langchain/core": "npm:@langchain/core@^1.1.47",
