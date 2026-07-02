@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import mammoth from 'mammoth'
 import type { Cheerio } from 'cheerio'
 import { load } from 'cheerio'
-import type { Element } from 'domhandler'
+import type { AnyNode, Element } from 'domhandler'
 import type { Buffer } from 'node:buffer'
 
 export async function extractRawText(filePath: string): Promise<string> {
@@ -235,5 +235,33 @@ export class DocxDocument {
 
   findParagraphById(sessionId: string): DocxParagraph | undefined {
     return this.paragraphMap.get(sessionId)
+  }
+
+  /**
+   * 深度优先遍历 docx 文档的 HTML DOM 树，对每个节点调用回调函数
+   * 回调返回 true 时继续遍历子节点，返回 false 则跳过子节点
+   */
+  static async dfs(
+    filePath: string,
+    it: (node: AnyNode) => boolean,
+  ): Promise<void> {
+    const buffer = await fs.readFile(filePath)
+    const result = await mammoth.convertToHtml({ buffer })
+    const html = `<body>${result.value}</body>`
+    const $ = load(html)
+
+    function walk(node: AnyNode) {
+      const shouldContinue = it(node)
+      if (shouldContinue && 'children' in node && node.children) {
+        for (const child of node.children) {
+          walk(child as AnyNode)
+        }
+      }
+    }
+
+    const root = $('body')[0]
+    if (root) {
+      walk(root)
+    }
   }
 }

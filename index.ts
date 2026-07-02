@@ -2,6 +2,7 @@
 
 import { Command } from 'commander'
 import { echo } from './commands/echo.ts'
+import { fmt } from './commands/fmt.ts'
 import { findSpace } from './commands/find-space.ts'
 import { parseRefKind, parseRefMode, refs } from './commands/refs.ts'
 import { aiReview } from './commands/ai-review.ts'
@@ -27,6 +28,10 @@ program.command('echo').description('输出 rawText')
   .argument('<fileName>', 'docx 文件路径')
   .argument('[newlinePlaceholder]', '换行符占位符，不指定则直接输出换行符')
   .action(echo)
+
+program.command('fmt').description('输出文本，超链接以 (文本)[链接] 格式展示')
+  .argument('<fileName>', 'docx 文件路径')
+  .action(fmt)
 
 program
   .command('find-space')
