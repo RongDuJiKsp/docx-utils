@@ -2,13 +2,28 @@ import type { AnyNode, Element } from 'domhandler'
 import { DocxDocument } from '../utils/docx.ts'
 
 // 块级元素标签名集合
-const BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'tr', 'div', 'blockquote'])
+const BLOCK_TAGS = new Set([
+  'p',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'li',
+  'tr',
+  'div',
+  'blockquote',
+])
 
 /**
  * 类似 echo，打印文档纯文本，但对超链接在文本后面附加链接地址
  * 格式：(文本)[链接]
  */
-export async function fmt(fileName: string) {
+export async function fmt(
+  fileName: string,
+  { showLink }: { showLink?: boolean } = {},
+) {
   const output: string[] = []
   let currentLine = ''
 
@@ -25,9 +40,13 @@ export async function fmt(fileName: string) {
       // 处理超链接，返回 false 跳过子节点
       if (el.name === 'a') {
         const text = getTextContent(el)
-        const href = el.attribs?.['href'] || ''
-        if (href && text) {
-          currentLine += `(${text})[${href}]`
+        if (showLink) {
+          const href = el.attribs?.['href'] || ''
+          if (href && text) {
+            currentLine += `(${text})[${href}]`
+          } else {
+            currentLine += text
+          }
         } else {
           currentLine += text
         }
@@ -60,4 +79,3 @@ function getTextContent(el: Element): string {
   }
   return text
 }
-

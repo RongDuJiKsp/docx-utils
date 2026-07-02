@@ -31,7 +31,10 @@ program.command('echo').description('输出 rawText')
 
 program.command('fmt').description('输出文本，超链接以 (文本)[链接] 格式展示')
   .argument('<fileName>', 'docx 文件路径')
-  .action(fmt)
+  .option('--show-link', '显示超链接地址')
+  .action((fileName: string, options: { showLink?: boolean }) =>
+    fmt(fileName, options)
+  )
 
 program
   .command('find-space')
