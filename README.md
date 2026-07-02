@@ -10,6 +10,7 @@ To run:
 
 ```bash
 docx-utils echo ./demo.docx
+docx-utils echo ./demo.docx '\n'
 docx-utils find-space ./demo.docx
 docx-utils find-space ./demo.docx 5
 docx-utils find-space ./demo.docx 5 12
@@ -25,13 +26,13 @@ docx-utils ai-review ./demo.docx --rules ./rules.md --max-iterations 20
 CLI commands:
 
 ```bash
-docx-utils echo <fileName>
+docx-utils echo <fileName> [newlinePlaceholder]
 docx-utils find-space [options] <fileName> [arg1] [arg2]
 docx-utils refs <fileName> <table|pic> <def|use>
 docx-utils ai-review <fileName> --rules <rules.md> [--max-iterations <n>]
 ```
 
-- `echo`: 输出 `rawText`，并将换行显示为 `\n`。
+- `echo`: 输出 `rawText`。可指定换行符占位符（如 `\n`），不指定则直接输出换行符。
 - `find-space`: 统计空格数量并输出每个空格附近上下文。
 - `refs`: 查找图/表题（def）或引用（use）。
 - `ai-review`: 使用 AI 按章节规则审查 docx 内容。

@@ -23,8 +23,10 @@ const program = new Command()
 program.name('docx-utils').description('DOCX 文本工具').showHelpAfterError()
   .showSuggestionAfterError().allowExcessArguments(false)
 
-program.command('echo').description('输出 rawText，并将换行显示为 \\n')
-  .argument('<fileName>', 'docx 文件路径').action(echo)
+program.command('echo').description('输出 rawText')
+  .argument('<fileName>', 'docx 文件路径')
+  .argument('[newlinePlaceholder]', '换行符占位符，不指定则直接输出换行符')
+  .action(echo)
 
 program
   .command('find-space')
