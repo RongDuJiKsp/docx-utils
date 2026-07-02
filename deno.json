@@ -1,7 +1,7 @@
 {
   "name": "@rdjksp/docx-utils",
   "version": "0.3.3",
-  "exports":"./index.ts",
+  "exports": "./index.ts",
   "lock": true,
   "nodeModulesDir": "auto",
   "license": "MIT",
@@ -33,10 +33,10 @@
     "semiColons": false
   },
   "permissions": {
-    "default":{
-      "env":true,
-      "net":true,
-      "read":true
+    "default": {
+      "env": true,
+      "net": true,
+      "read": true
     }
   }
 }

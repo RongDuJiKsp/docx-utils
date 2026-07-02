@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools'
 import {
   AIMessage,
-  BaseMessage,
+  type BaseMessage,
   HumanMessage,
   ToolMessage,
 } from '@langchain/core/messages'
