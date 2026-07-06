@@ -24,7 +24,7 @@ await build({
     license,
     repository: {
       type: 'git',
-      url: 'git+https://github.com/rdjksp/docx-utils.git',
+      url: 'git+https://github.com/RongdujiKsp/docx-utils.git',
     },
     bin: {
       'docx-utils': './esm/index.js',
